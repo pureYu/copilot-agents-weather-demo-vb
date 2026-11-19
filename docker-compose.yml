@@ -1,0 +1,16 @@
+services:
+  weather-app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - WEATHER_DEBUG=false
+      - WEATHER_HOST=0.0.0.0
+      - WEATHER_PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

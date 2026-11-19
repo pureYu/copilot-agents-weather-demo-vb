@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            color: #1a202c;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        h1 { margin-bottom: 0.5rem; font-size: 2rem; color: #2d3748; }
+        .subtitle { color: #718096; margin-bottom: 2rem; }
+        .search-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            width: 100%;
+            max-width: 480px;
+            margin-bottom: 1.5rem;
+        }
+        form { display: flex; gap: 0.5rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { outline: none; border-color: #4299e1; }
+        button {
+            padding: 0.75rem 1.5rem;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #3182ce; }
+        button:disabled { background: #a0aec0; cursor: not-allowed; }
+        #weather-result {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            width: 100%;
+            max-width: 480px;
+            display: none;
+        }
+        #weather-result.visible { display: block; }
+        .weather-city { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
+        .weather-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .weather-item { padding: 0.75rem; background: #f7fafc; border-radius: 8px; }
+        .weather-item .label { font-size: 0.8rem; color: #718096; text-transform: uppercase; }
+        .weather-item .value { font-size: 1.25rem; font-weight: 600; margin-top: 0.25rem; }
+        .weather-forecast {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #ebf8ff;
+            border-radius: 8px;
+            grid-column: 1 / -1;
+        }
+        .loading { text-align: center; color: #718096; padding: 1rem; }
+        .error {
+            text-align: center;
+            color: #e53e3e;
+            padding: 1rem;
+            background: #fed7d7;
+            border-radius: 8px;
+        }
+        .empty-state { text-align: center; color: #a0aec0; padding: 1rem; }
+        footer { margin-top: auto; padding-top: 2rem; color: #a0aec0; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <h1>🌤️ Weather Forecast</h1>
+    <p class="subtitle">Enter a city to get current weather</p>
+
+    <div class="search-container">
+        <form id="weather-form" onsubmit="handleSearch(event)">
+            <label for="city" class="sr-only">City name</label>
+            <input type="text" id="city" name="city" placeholder="Enter city name..." required aria-label="City name">
+            <button type="submit" id="search-btn">Search</button>
+        </form>
+    </div>
+
+    <div id="weather-result">
+        <div id="result-content"></div>
+    </div>
+
+    <footer>
+        <p>Weather Forecast Demo — GitHub Copilot AI-assisted development</p>
+    </footer>
+
+    <script>
+        async function handleSearch(event) {
+            event.preventDefault();
+            const city = document.getElementById('city').value.trim();
+            if (!city) return;
+
+            const resultDiv = document.getElementById('weather-result');
+            const contentDiv = document.getElementById('result-content');
+            const btn = document.getElementById('search-btn');
+
+            // Show loading state
+            resultDiv.classList.add('visible');
+            contentDiv.innerHTML = '<div class="loading">Loading weather data...</div>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+                const data = await response.json();
+
+                if (response.ok && data.data) {
+                    const w = data.data;
+                    contentDiv.innerHTML = `
+                        <div class="weather-city">${w.city}</div>
+                        <div class="weather-grid">
+                            <div class="weather-item">
+                                <div class="label">Temperature</div>
+                                <div class="value">${w.temperature}°C</div>
+                            </div>
+                            <div class="weather-item">
+                                <div class="label">Description</div>
+                                <div class="value">${w.description}</div>
+                            </div>
+                            <div class="weather-item">
+                                <div class="label">Humidity</div>
+                                <div class="value">${w.humidity}%</div>
+                            </div>
+                            <div class="weather-item">
+                                <div class="label">Wind Speed</div>
+                                <div class="value">${w.wind_speed} km/h</div>
+                            </div>
+                            ${w.forecast ? `<div class="weather-forecast">
+                                <div class="label">Forecast</div>
+                                <div class="value">${w.forecast}</div>
+                            </div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    contentDiv.innerHTML = `<div class="error">${data.error || 'City not found. Please try another city.'}</div>`;
+                }
+            } catch (err) {
+                contentDiv.innerHTML = '<div class="error">Unable to connect to weather service. Please try again later.</div>';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
